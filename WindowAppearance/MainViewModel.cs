@@ -24,7 +24,16 @@ namespace WindowAppearance
         private int _k = 3;                 // количество кластеров (по умолчанию 3)
         private double[][] _pixels;         // массив пикселей (нормализованные RGB)
         private int _imageWidth, _imageHeight;
-
+        private double _scaleFactor = 0.5; // 50% по умолчанию
+        public double ScaleFactor
+        {
+            get => _scaleFactor;
+            set
+            {
+                _scaleFactor = value;
+                OnPropertyChanged();
+            }
+        }
         // === Свойства (привязка к UI) ===
         /// <summary>Исходное изображение</summary>
         public BitmapImage OriginalImage
@@ -61,12 +70,14 @@ namespace WindowAppearance
         // === Команды ===
         public ICommand LoadImageCommand { get; }
         public ICommand ClusterCommand { get; }
+        public ICommand SaveImageCommand { get; }
 
         /// <summary>Конструктор – инициализирует команды</summary>
         public MainViewModel()
         {
             LoadImageCommand = new RelayCommand(ExecuteLoadImage);
             ClusterCommand = new RelayCommand(ExecuteCluster, CanExecuteCluster);
+            SaveImageCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
         }
 
         // === Методы ===
@@ -84,7 +95,7 @@ namespace WindowAppearance
                 try
                 {
                     // Загружаем изображение через ImageLoader
-                    (int width, int height, double[][] pixels) = ImageLoader.Load(openFileDialog.FileName);
+                    (int width, int height, double[][] pixels) = ImageLoader.Load(openFileDialog.FileName, ScaleFactor);
 
                     _imageWidth = width;
                     _imageHeight = height;
@@ -98,8 +109,8 @@ namespace WindowAppearance
                     int totalPixels = width * height;
                     ImageInfo = $"Ширина: {width} px\nВысота: {height} px\nПикселей: {totalPixels:N0}";
 
-                    // Автоматически выполняем кластеризацию после загрузки
-                    ExecuteCluster(null);
+                    //// Автоматически выполняем кластеризацию после загрузки
+                    //ExecuteCluster(null);
                 }
                 catch (Exception ex)
                 {
@@ -192,7 +203,54 @@ namespace WindowAppearance
             // Создаём WriteableBitmap и заполняем его данными
             var wb = new WriteableBitmap(_imageWidth, _imageHeight, 96, 96, PixelFormats.Rgb24, null);
             wb.WritePixels(new Int32Rect(0, 0, _imageWidth, _imageHeight), pixelData, _imageWidth * channels, 0);
+            // Проверка, что изображение создано
+            if (wb == null)
+            {
+                Debug.WriteLine("CreateSegmentedImage: WriteableBitmap = null");
+                return null;
+            }
+            Debug.WriteLine($"CreateSegmentedImage: WriteableBitmap создан, размер {_imageWidth}x{_imageHeight}");
             return wb;
+        }
+        private bool CanExecuteSave(object param) => SegmentedImage != null;
+
+        private void ExecuteSave(object param)
+        {
+            var saveDialog = new SaveFileDialog
+            {
+                Filter = "PNG Image|*.png|JPEG Image|*.jpg|Все файлы|*.*",
+                Title = "Сохранить сегментированное изображение",
+                DefaultExt = "png"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // Проверяем, что SegmentedImage можно преобразовать в BitmapSource
+                    if (SegmentedImage is BitmapSource bitmapSource)
+                    {
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+
+                        using (var fileStream = new System.IO.FileStream(saveDialog.FileName, System.IO.FileMode.Create))
+                        {
+                            encoder.Save(fileStream);
+                        }
+                        ImageInfo = $"Изображение сохранено: {saveDialog.FileName}";
+                    }
+                    else
+                    {
+                        ImageInfo = "Ошибка: сегментированное изображение не является BitmapSource";
+                        Debug.WriteLine("ExecuteSave: SegmentedImage не является BitmapSource");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ImageInfo = $"Ошибка сохранения: {ex.Message}";
+                    Debug.WriteLine($"ExecuteSave исключение: {ex}");
+                }
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
