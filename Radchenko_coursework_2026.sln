@@ -3,9 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36429.23
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowAppearance", "WindowAppearance\WindowAppearance.csproj", "{25949452-7EB6-4A61-BFB3-A278043DD882}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageParser", "ImageParser\ImageParser.csproj", "{17AECF3C-D292-49CB-AC2D-6A365CB533AF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmImageSegmentator", "WindowAppearance\GmmImageSegmentator.csproj", "{25949452-7EB6-4A61-BFB3-A278043DD882}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GMMLogics", "GMMLogics\GMMLogics.csproj", "{54C30F42-6C11-46FE-B42C-2DBDDF0F319D}"
 EndProject
@@ -19,10 +17,6 @@ Global
 		{25949452-7EB6-4A61-BFB3-A278043DD882}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25949452-7EB6-4A61-BFB3-A278043DD882}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{25949452-7EB6-4A61-BFB3-A278043DD882}.Release|Any CPU.Build.0 = Release|Any CPU
-		{17AECF3C-D292-49CB-AC2D-6A365CB533AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{17AECF3C-D292-49CB-AC2D-6A365CB533AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{17AECF3C-D292-49CB-AC2D-6A365CB533AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{17AECF3C-D292-49CB-AC2D-6A365CB533AF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{54C30F42-6C11-46FE-B42C-2DBDDF0F319D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{54C30F42-6C11-46FE-B42C-2DBDDF0F319D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54C30F42-6C11-46FE-B42C-2DBDDF0F319D}.Release|Any CPU.ActiveCfg = Release|Any CPU
