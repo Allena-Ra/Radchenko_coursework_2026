@@ -59,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Implementations\AccordGMMAdapter.cs" />
+    <Compile Include="Implementations\CustomGMM.cs" />
     <Compile Include="Interfaces\IClusteringAlgorithm.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
