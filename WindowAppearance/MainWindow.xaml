@@ -25,6 +25,8 @@
                     Command="{Binding LoadImageCommand}"
                     Padding="10,5" Margin="0,0,10,0"/>
             <TextBlock Text="{Binding ImageInfo}" VerticalAlignment="Center" FontSize="12"/>
+            <Button Content="Фильтры" Command="{Binding OpenFiltersCommand}" Margin="5,0,0,0"/>
+            <Button Content="Сравнить с Accord" Command="{Binding CompareWithAccordCommand}" Margin="5,0,0,0"/>
         </StackPanel>
 
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0">

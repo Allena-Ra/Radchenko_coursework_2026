@@ -3,6 +3,8 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace GmmImageSegmentator.Utilities
@@ -54,7 +56,7 @@ namespace GmmImageSegmentator.Utilities
                 {
                     for (int x = 0; x < newWidth; x++)
                     {
-                        Color c = scaledBitmap.GetPixel(x, y);
+                        System.Drawing.Color c = scaledBitmap.GetPixel(x, y);
                         pixels[y * newWidth + x] = new double[] { c.R / 255.0, c.G / 255.0, c.B / 255.0 };
                     }
                 }
@@ -150,11 +152,30 @@ namespace GmmImageSegmentator.Utilities
                 return img;
             }
         }
+        /// <summary>
+        /// Создаёт сегментированное изображение на основе заданных цветов для каждого кластера.
+        /// </summary>
+        public static BitmapImage CreateSegmentedImageFromColors(int[] labels, int width, int height, List<System.Windows.Media.Color> clusterColors)
+        {
+            byte[] pixelData = new byte[width * height * 3];
+            int idx = 0;
+            for (int i = 0; i < labels.Length; i++)
+            {
+                int cluster = labels[i];
+                var c = clusterColors[cluster];
+                pixelData[idx++] = c.R;
+                pixelData[idx++] = c.G;
+                pixelData[idx++] = c.B;
+            }
+            var wb = new WriteableBitmap(width, height, 96, 96, PixelFormats.Rgb24, null);
+            wb.WritePixels(new Int32Rect(0, 0, width, height), pixelData, width * 3, 0);
+            return ConvertWriteableBitmapToBitmapImage(wb);
+        }
 
         /// <summary>
-        /// Конвертирует WriteableBitmap в BitmapImage.
+        /// Конвертирует WriteableBitmap в BitmapImage (публичная версия).
         /// </summary>
-        private static BitmapImage ConvertWriteableBitmapToBitmapImage(WriteableBitmap wb)
+        public static BitmapImage ConvertWriteableBitmapToBitmapImage(WriteableBitmap wb)
         {
             using (var ms = new MemoryStream())
             {
