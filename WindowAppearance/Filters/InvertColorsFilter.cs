@@ -1,16 +1,35 @@
-﻿using GmmImageSegmentator.Filters;
-using GmmImageSegmentator.Utilities;
+﻿using System;
+using System.Collections.Generic;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using MediaColor = System.Windows.Media.Color;
+using GmmImageSegmentator.Utilities;
 
-public class InvertColorsFilter : ImageFilter
+namespace GmmImageSegmentator.Filters
 {
-    public override BitmapImage Apply(int[] labels, int width, int height, int k, List<MediaColor>? clusterMeanColors = null)
+    public class InvertColorsFilter : IImageFilter
     {
-        if (clusterMeanColors == null) throw new ArgumentNullException(nameof(clusterMeanColors));
-        var inverted = new List<MediaColor>();
-        foreach (var c in clusterMeanColors)
-            inverted.Add(MediaColor.FromRgb((byte)(255 - c.R), (byte)(255 - c.G), (byte)(255 - c.B)));
-        return ImageLoader.CreateSegmentedImageFromColors(labels, width, height, inverted);
+        private readonly int[] _labels;
+        private readonly int _width, _height;
+        private readonly Func<List<Color>> _getPalette;
+        private readonly Action<List<Color>> _setPalette;
+
+        public InvertColorsFilter(int[] labels, int width, int height, Func<List<Color>> getPalette, Action<List<Color>> setPalette)
+        {
+            _labels = labels;
+            _width = width;
+            _height = height;
+            _getPalette = getPalette;
+            _setPalette = setPalette;
+        }
+
+        public BitmapImage Apply(BitmapImage source)
+        {
+            var palette = _getPalette();
+            var inverted = new List<Color>();
+            foreach (var c in palette)
+                inverted.Add(Color.FromRgb((byte)(255 - c.R), (byte)(255 - c.G), (byte)(255 - c.B)));
+            _setPalette(inverted);
+            return ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, inverted);
+        }
     }
 }

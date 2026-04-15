@@ -6,6 +6,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Color = System.Windows.Media.Color;
 
 namespace GmmImageSegmentator.Utilities
 {
@@ -155,8 +156,9 @@ namespace GmmImageSegmentator.Utilities
         /// <summary>
         /// Создаёт сегментированное изображение на основе заданных цветов для каждого кластера.
         /// </summary>
-        public static BitmapImage CreateSegmentedImageFromColors(int[] labels, int width, int height, List<System.Windows.Media.Color> clusterColors)
+        public static BitmapImage CreateSegmentedImageFromColors(int[] labels, int width, int height, List<Color> clusterColors)
         {
+            if (width <= 0 || height <= 0) throw new ArgumentException("Width and height must be positive.");
             byte[] pixelData = new byte[width * height * 3];
             int idx = 0;
             for (int i = 0; i < labels.Length; i++)
@@ -173,7 +175,7 @@ namespace GmmImageSegmentator.Utilities
         }
 
         /// <summary>
-        /// Конвертирует WriteableBitmap в BitmapImage (публичная версия).
+        /// Конвертирует WriteableBitmap в BitmapImage.
         /// </summary>
         public static BitmapImage ConvertWriteableBitmapToBitmapImage(WriteableBitmap wb)
         {
@@ -191,6 +193,19 @@ namespace GmmImageSegmentator.Utilities
                 img.Freeze();
                 return img;
             }
+        }
+
+        /// <summary>
+        /// Извлекает массив пикселей (RGB) из BitmapImage.
+        /// </summary>
+        public static byte[] GetPixels(BitmapImage source)
+        {
+            // Преобразуем BitmapImage в WriteableBitmap
+            var wb = new WriteableBitmap(source);
+            int stride = wb.PixelWidth * (wb.Format.BitsPerPixel / 8);
+            byte[] pixels = new byte[wb.PixelHeight * stride];
+            wb.CopyPixels(pixels, stride, 0);
+            return pixels;
         }
     }
 }

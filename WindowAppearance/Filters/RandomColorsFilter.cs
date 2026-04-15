@@ -6,14 +6,14 @@ using GmmImageSegmentator.Utilities;
 
 namespace GmmImageSegmentator.Filters
 {
-    public class RecolorFilter : IImageFilter
+    public class RandomColorsFilter : IImageFilter
     {
         private readonly int[] _labels;
         private readonly int _width, _height;
         private readonly Func<List<Color>> _getPalette;
         private readonly Action<List<Color>> _setPalette;
 
-        public RecolorFilter(int[] labels, int width, int height, Func<List<Color>> getPalette, Action<List<Color>> setPalette)
+        public RandomColorsFilter(int[] labels, int width, int height, Func<List<Color>> getPalette, Action<List<Color>> setPalette)
         {
             _labels = labels;
             _width = width;
@@ -24,8 +24,12 @@ namespace GmmImageSegmentator.Filters
 
         public BitmapImage Apply(BitmapImage source)
         {
-            var palette = _getPalette();
-            return ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, palette);
+            var rand = new Random();
+            var randomColors = new List<Color>();
+            for (int i = 0; i < _getPalette().Count; i++)
+                randomColors.Add(Color.FromRgb((byte)rand.Next(256), (byte)rand.Next(256), (byte)rand.Next(256)));
+            _setPalette(randomColors);
+            return ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, randomColors);
         }
     }
 }

@@ -6,15 +6,15 @@
     <StackPanel Margin="10">
         <TextBlock Text="R:"/>
         <Slider x:Name="RSlider" Minimum="0" Maximum="255" Value="0"/>
-        <TextBox x:Name="RTextBox" Text="{Binding Value, ElementName=RSlider, StringFormat=F0}" Width="50"/>
+        <TextBox Text="{Binding Value, ElementName=RSlider, StringFormat=F0}" Width="50"/>
 
         <TextBlock Text="G:" Margin="0,10,0,0"/>
         <Slider x:Name="GSlider" Minimum="0" Maximum="255" Value="0"/>
-        <TextBox x:Name="GTextBox" Text="{Binding Value, ElementName=GSlider, StringFormat=F0}" Width="50"/>
+        <TextBox Text="{Binding Value, ElementName=GSlider, StringFormat=F0}" Width="50"/>
 
         <TextBlock Text="B:" Margin="0,10,0,0"/>
         <Slider x:Name="BSlider" Minimum="0" Maximum="255" Value="0"/>
-        <TextBox x:Name="BTextBox" Text="{Binding Value, ElementName=BSlider, StringFormat=F0}" Width="50"/>
+        <TextBox Text="{Binding Value, ElementName=BSlider, StringFormat=F0}" Width="50"/>
 
         <Rectangle x:Name="ColorPreview" Height="40" Margin="0,20" Stroke="Black" StrokeThickness="1"/>
 
