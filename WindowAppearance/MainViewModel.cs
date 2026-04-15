@@ -87,7 +87,7 @@ namespace GmmImageSegmentator
 
             try
             {
-                IClusteringAlgorithm algorithm = new CustomGMM();
+                IClusteringAlgorithm algorithm = new CustomGMMPredictor();
                 int[] labels = algorithm.Cluster(_pixels, K);
                 var segmented = ImageLoader.CreateSegmentedImage(labels, _pixels, _imageWidth, _imageHeight, K);
                 SegmentedImage = segmented;
