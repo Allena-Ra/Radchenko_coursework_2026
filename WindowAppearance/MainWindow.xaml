@@ -34,6 +34,9 @@
             <Button Content="Загрузить изображение" 
                     Command="{Binding LoadImageCommand}"
                     Padding="10,5" Margin="0,0,10,0"/>
+            <Button Content="Сохранить результат" 
+                    Command="{Binding SaveImageCommand}" 
+                    Margin="5,0,0,0"/>
             <TextBlock Text="{Binding ImageInfo}" VerticalAlignment="Center" FontSize="12"/>
         </StackPanel>
 
@@ -107,9 +110,6 @@
                     Visibility="{Binding ComparisonButtonsVisibility}"
                     Margin="5,0,0,0"/>
             
-            <Button Content="Сохранить результат" 
-                    Command="{Binding SaveImageCommand}" 
-                    Margin="5,0,0,0"/>
         </StackPanel>
     </Grid>
 </Window>

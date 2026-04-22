@@ -18,8 +18,8 @@ namespace GmmImageSegmentator
         private readonly List<Color> _clusterMeanColors;
         private List<Color> _currentPalette;
         private BitmapImage _currentImage;
-        private Stack<List<Color>> _undoStack = new();
-        private Stack<List<Color>> _redoStack = new();
+        private Stack<(BitmapImage Image, List<Color> Palette)> _undoStack = new();
+        private Stack<(BitmapImage Image, List<Color> Palette)> _redoStack = new();
 
         public FilterWindow(int[] labels, int width, int height, int k, List<Color> clusterMeanColors)
         {
@@ -30,9 +30,9 @@ namespace GmmImageSegmentator
             _k = k;
             _clusterMeanColors = clusterMeanColors;
             _currentPalette = new List<Color>(clusterMeanColors);
-            _undoStack.Push(new List<Color>(_currentPalette));
             _currentImage = ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, _currentPalette);
             FilteredImage.Source = _currentImage;
+            PushUndoState();
             LoadFilters();
             UpdateUndoRedoButtons();
         }
@@ -45,10 +45,10 @@ namespace GmmImageSegmentator
 
             var filters = new List<FilterItem>
             {
-                new FilterItem { Name = "Перекраска кластеров", Filter = null, IsColorFilter = true },
-                new FilterItem { Name = "Инверсия цветов", Filter = invert, IsColorFilter = true },
-                new FilterItem { Name = "Случайные цвета", Filter = random, IsColorFilter = true },
-                new FilterItem { Name = "Границы кластеров", Filter = edge, IsColorFilter = false }
+                new FilterItem { Name = "Перекраска кластеров", Filter = null, IsColorFilter = true, HideApplyButton = true },
+                new FilterItem { Name = "Инверсия цветов", Filter = invert, IsColorFilter = true, HideApplyButton = false },
+                new FilterItem { Name = "Случайные цвета", Filter = random, IsColorFilter = true, HideApplyButton = false },
+                new FilterItem { Name = "Границы кластеров", Filter = edge, IsColorFilter = false, HideApplyButton = false }
             };
             FiltersListBox.ItemsSource = filters;
         }
@@ -65,9 +65,9 @@ namespace GmmImageSegmentator
                     var dialog = new ColorPickerDialog(_currentPalette[cluster]);
                     if (dialog.ShowDialog() == true)
                     {
-                        PushUndo();
+                        PushUndoState();
                         _currentPalette[cluster] = dialog.SelectedColor;
-                        RefreshImage();
+                        RefreshImageFromPalette();
                         UpdateUndoRedoButtons();
                     }
                 };
@@ -83,34 +83,40 @@ namespace GmmImageSegmentator
         private void FiltersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             FilterSettingsPanel.Children.Clear();
-            if (FiltersListBox.SelectedItem is FilterItem item && item.Name == "Перекраска кластеров")
+            if (FiltersListBox.SelectedItem is FilterItem item)
             {
-                FilterSettingsPanel.Children.Add(CreateRecolorSettings());
+                // Скрываем кнопку "Применить" для перекраски
+                ApplyButton.Visibility = item.HideApplyButton ? Visibility.Collapsed : Visibility.Visible;
+                if (item.Name == "Перекраска кластеров")
+                {
+                    FilterSettingsPanel.Children.Add(CreateRecolorSettings());
+                }
             }
         }
 
         private void ApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            if (FiltersListBox.SelectedItem is FilterItem item)
+            if (FiltersListBox.SelectedItem is FilterItem item && !item.HideApplyButton)
             {
                 if (item.IsColorFilter && item.Filter != null)
                 {
-                    PushUndo();
+                    PushUndoState();
                     item.Filter.Apply(null); // обновляет _currentPalette
-                    RefreshImage();
+                    RefreshImageFromPalette();
                     UpdateUndoRedoButtons();
                 }
                 else if (!item.IsColorFilter && item.Filter != null)
                 {
-                    // Границы – не меняют палитру, но мы можем сохранить текущее изображение в историю (опционально)
-                    // Для простоты не добавляем в отмену, так как это отдельный режим.
-                    _currentImage = item.Filter.Apply(null);
+                    PushUndoState();
+                    var result = item.Filter.Apply(_currentImage);
+                    _currentImage = result;
                     FilteredImage.Source = _currentImage;
+                    UpdateUndoRedoButtons();
                 }
             }
         }
 
-        private void RefreshImage()
+        private void RefreshImageFromPalette()
         {
             _currentImage = ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, _currentPalette);
             FilteredImage.Source = _currentImage;
@@ -122,19 +128,27 @@ namespace GmmImageSegmentator
             }
         }
 
-        private void PushUndo()
+        private void PushUndoState()
         {
-            _undoStack.Push(new List<Color>(_currentPalette));
+            _undoStack.Push((_currentImage, new List<Color>(_currentPalette)));
             _redoStack.Clear();
         }
 
         private void Undo()
         {
-            if (_undoStack.Count > 0)
+            if (_undoStack.Count > 1)
             {
-                _redoStack.Push(new List<Color>(_currentPalette));
-                _currentPalette = _undoStack.Pop();
-                RefreshImage();
+                _redoStack.Push((_currentImage, new List<Color>(_currentPalette)));
+                var previous = _undoStack.Pop();
+                _currentImage = previous.Image;
+                _currentPalette = previous.Palette;
+                FilteredImage.Source = _currentImage;
+                // Обновляем панель перекраски, если она открыта
+                if (FiltersListBox.SelectedItem is FilterItem selected && selected.Name == "Перекраска кластеров")
+                {
+                    FilterSettingsPanel.Children.Clear();
+                    FilterSettingsPanel.Children.Add(CreateRecolorSettings());
+                }
                 UpdateUndoRedoButtons();
             }
         }
@@ -143,16 +157,23 @@ namespace GmmImageSegmentator
         {
             if (_redoStack.Count > 0)
             {
-                _undoStack.Push(new List<Color>(_currentPalette));
-                _currentPalette = _redoStack.Pop();
-                RefreshImage();
+                _undoStack.Push((_currentImage, new List<Color>(_currentPalette)));
+                var next = _redoStack.Pop();
+                _currentImage = next.Image;
+                _currentPalette = next.Palette;
+                FilteredImage.Source = _currentImage;
+                if (FiltersListBox.SelectedItem is FilterItem selected && selected.Name == "Перекраска кластеров")
+                {
+                    FilterSettingsPanel.Children.Clear();
+                    FilterSettingsPanel.Children.Add(CreateRecolorSettings());
+                }
                 UpdateUndoRedoButtons();
             }
         }
 
         private void UpdateUndoRedoButtons()
         {
-            UndoButton.IsEnabled = _undoStack.Count > 1; // сохраняем начальное состояние
+            UndoButton.IsEnabled = _undoStack.Count > 1;
             RedoButton.IsEnabled = _redoStack.Count > 0;
         }
 
@@ -169,7 +190,6 @@ namespace GmmImageSegmentator
             }
         }
 
-        private void Close_Click(object sender, RoutedEventArgs e) => Close();
     }
 
     public class FilterItem
@@ -177,5 +197,6 @@ namespace GmmImageSegmentator
         public string Name { get; set; }
         public IImageFilter Filter { get; set; }
         public bool IsColorFilter { get; set; }
+        public bool HideApplyButton { get; set; } = false;
     }
 }

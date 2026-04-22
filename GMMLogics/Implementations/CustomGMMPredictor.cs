@@ -1,4 +1,4 @@
-﻿using System;
+﻿ using System;
 using GMMLogics.Interfaces;
 
 namespace GMMLogics.Implementations

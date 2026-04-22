@@ -6,9 +6,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Styles/DarkTheme.xaml"/>
+                <ResourceDictionary Source="Styles/DarkTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <Style TargetType="Window" BasedOn="{StaticResource DarkWindowStyle}"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

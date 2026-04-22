@@ -9,12 +9,14 @@
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#5A5A5E"/>
     <SolidColorBrush x:Key="ButtonPressBrush" Color="#3A3A3E"/>
 
-    <Style x:Key="DarkWindowStyle" TargetType="Window">
+    <Style TargetType="Window">
         <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="12"/>
     </Style>
+
+    <Style TargetType="NavigationWindow" BasedOn="{StaticResource {x:Type Window}}"/>
 
     <Style TargetType="Button">
         <Setter Property="Background" Value="{StaticResource ButtonBackgroundBrush}"/>

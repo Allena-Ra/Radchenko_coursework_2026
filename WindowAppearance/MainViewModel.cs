@@ -141,7 +141,7 @@ namespace GmmImageSegmentator
                     _imageHeight = height;
                     _pixels = pixels;
                     OriginalImage = displayImage;
-                    ImageInfo = $"Ширина: {width} px\nВысота: {height} px\nПикселей: {width * height:N0}\nМасштаб: {settingsDialog.ScaleFactor:P0}";
+                    ImageInfo = $"\tШирина: {width} px Высота: {height} px Пикселей: {width * height:N0} Масштаб: {settingsDialog.ScaleFactor:P0}";
                 }
                 catch (Exception ex)
                 {
@@ -166,7 +166,7 @@ namespace GmmImageSegmentator
                 var result = await Task.Run(() =>
                 {
                     _ = AnimateMessageAsync("Изучаю структуру цветов", _animationCts.Token);
-                    var algorithm = new CustomGMM();
+                    var algorithm = new CustomGMMPredictor();
                     return algorithm.Cluster(_pixels, K);
                 }, _animationCts.Token);
 
@@ -175,7 +175,7 @@ namespace GmmImageSegmentator
                 UpdateFromLabels(result);
                 RefreshSegmentedImage();
                 IsSegmented = true;
-                ImageInfo = $"Ширина: {_imageWidth} px\nВысота: {_imageHeight} px\nПикселей: {_pixels.Length:N0}\nКластеров: {K}";
+                ImageInfo = $"\tШирина: {_imageWidth} px Высота: {_imageHeight} px Пикселей: {_pixels.Length:N0} Кластеров: {K}";
             }
             catch (OperationCanceledException)
             {

@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <None Remove="1.png" />
-    <None Remove="ezgif.com-animated-gif-maker.gif" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,7 +21,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="1.png" />
-    <Resource Include="ezgif.com-animated-gif-maker.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Styles\DarkTheme.xaml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Page>
   </ItemGroup>
 
 </Project>
