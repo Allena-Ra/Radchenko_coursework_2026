@@ -5,7 +5,9 @@
         Title="Curse" 
         Height="650" Width="1000"
         WindowStartupLocation="CenterScreen"
-        Icon="/1.png">
+        Icon="/1.png" 
+        Background="{DynamicResource BackgroundBrush}" 
+        Foreground="{DynamicResource ForegroundBrush}" ResizeMode="CanMinimize" WindowState="Minimized">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibility"/>
