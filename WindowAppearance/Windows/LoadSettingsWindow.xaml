@@ -4,6 +4,7 @@
         Title="Параметры загрузки изображения"
         Height="400" Width="500"
         WindowStartupLocation="CenterOwner"
+        
         ResizeMode="NoResize">
 	<Grid Margin="10">
 		<Grid.RowDefinitions>

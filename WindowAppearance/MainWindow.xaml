@@ -4,57 +4,112 @@
         xmlns:local="clr-namespace:GmmImageSegmentator"
         Title="Curse" 
         Height="650" Width="1000"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Icon="/1.png">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibility"/>
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibility"/>
+    </Window.Resources>
+
     <Window.DataContext>
         <local:MainViewModel />
     </Window.DataContext>
+
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
+        <!-- Верхняя панель -->
         <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,0,0,10">
             <Button Content="Загрузить изображение" 
                     Command="{Binding LoadImageCommand}"
                     Padding="10,5" Margin="0,0,10,0"/>
             <TextBlock Text="{Binding ImageInfo}" VerticalAlignment="Center" FontSize="12"/>
-            <Button Content="Фильтры" Command="{Binding OpenFiltersCommand}" Margin="5,0,0,0"/>
-            <Button Content="Сравнить с Accord" Command="{Binding CompareWithAccordCommand}" Margin="5,0,0,0"/>
         </StackPanel>
 
+        <!-- Исходное изображение -->
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0">
             <Grid>
                 <TextBlock Text="Исходное изображение" HorizontalAlignment="Center" VerticalAlignment="Top" 
-                           Margin="5" Background="White" Padding="2"/>
+                           Margin="5" Padding="2"/>
                 <Image Source="{Binding OriginalImage}" Stretch="Uniform" Margin="5"/>
             </Grid>
         </Border>
 
+        <!-- Разделитель -->
         <TextBlock Grid.Row="1" Grid.Column="1" Text="→" VerticalAlignment="Center" 
                    HorizontalAlignment="Center" FontSize="24" FontWeight="Bold"/>
 
-        <Border Grid.Row="1" Grid.Column="2" BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0">
+        <!-- Сегментированное изображение -->
+        <Border Grid.Row="1" Grid.Column="2"  BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0">
             <Grid>
                 <TextBlock Text="Сегментированное изображение" HorizontalAlignment="Center" VerticalAlignment="Top" 
-                           Margin="5" Background="White" Padding="2"/>
-                <Image Source="{Binding SegmentedImage}" Stretch="Uniform" Margin="5"/>
+                           Margin="5" Padding="2"/>
+                
+                <!-- Изображение (видимо, когда не идёт кластеризация) -->
+                <Image Source="{Binding SegmentedImage}" 
+                       Stretch="Uniform" 
+                       Margin="5"
+                       Visibility="{Binding IsClustering, Converter={StaticResource InverseBooleanToVisibility}}"/>
+                
+                <!-- Сообщение о ходе обработки (видимо, когда идёт кластеризация) -->
+                <StackPanel Visibility="{Binding IsClustering, Converter={StaticResource BooleanToVisibility}}"
+                            HorizontalAlignment="Center" 
+                            VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ProcessingMessage}" 
+                               FontSize="16" 
+                               Foreground="Gray"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="AnimatedDots" 
+                               FontSize="16" 
+                               Foreground="Gray"
+                               HorizontalAlignment="Center"
+                               Text=""/>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
+        <!-- Нижняя панель управления -->
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" 
+                    Margin="0,10,0,0" HorizontalAlignment="Center">
+            
             <TextBlock Text="Количество кластеров: " VerticalAlignment="Center"/>
-            <Slider Minimum="2" Maximum="10" Value="{Binding K}" Width="150" Margin="5,0" 
-                    TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled="True"/>
+            <Slider Minimum="2" Maximum="10" 
+                    Value="{Binding K}" 
+                    IsEnabled="{Binding IsClustering, Converter={StaticResource InverseBooleanToVisibility}}"
+                    Width="150" Margin="5,0" 
+                    TickPlacement="BottomRight" TickFrequency="1" 
+                    IsSnapToTickEnabled="True"/>
             <TextBlock Text="{Binding K}" Width="30" VerticalAlignment="Center"/>
-            <Button Content="Выполнить кластеризацию" Command="{Binding ClusterCommand}" Margin="10,0,0,0"/>
-            <Button Content="Сохранить результат" Command="{Binding SaveImageCommand}" Margin="5,0,0,0"/>
+            
+            <Button Content="Выполнить кластеризацию" 
+                    Command="{Binding ClusterCommand}"
+                    IsEnabled="{Binding IsClustering, Converter={StaticResource InverseBooleanToVisibility}}"
+                    Margin="10,0,0,0"/>
+            
+            <Button Content="Фильтры" 
+                    Command="{Binding OpenFiltersCommand}" 
+                    Visibility="{Binding FilterButtonsVisibility}"
+                    Margin="5,0,0,0"/>
+            
+            <Button Content="Сравнить с Accord" 
+                    Command="{Binding CompareWithAccordCommand}" 
+                    Visibility="{Binding ComparisonButtonsVisibility}"
+                    Margin="5,0,0,0"/>
+            
+            <Button Content="Сохранить результат" 
+                    Command="{Binding SaveImageCommand}" 
+                    Margin="5,0,0,0"/>
         </StackPanel>
     </Grid>
 </Window>
