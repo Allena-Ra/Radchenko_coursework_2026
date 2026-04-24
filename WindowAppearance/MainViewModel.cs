@@ -1,17 +1,13 @@
-﻿using System;
+﻿using GmmImageSegmentator.Utilities;
+using GMMLogics.Implementations;
+using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Microsoft.Win32;
-using GmmImageSegmentator.Utilities;
-using GMMLogics.Implementations;
-using GMMLogics.Interfaces;
 
 namespace GmmImageSegmentator
 {
@@ -20,6 +16,7 @@ namespace GmmImageSegmentator
         // === Поля ===
         private BitmapImage? _originalImage;
         private ImageSource? _segmentedImage;
+        private CustomGMMPredictor? _lastCustomPredictor;
         private string _imageInfo = string.Empty;
         private int _k = 3;
         private double[][]? _pixels;
@@ -167,6 +164,7 @@ namespace GmmImageSegmentator
                 {
                     _ = AnimateMessageAsync("Изучаю структуру цветов", _animationCts.Token);
                     var algorithm = new CustomGMMPredictor();
+                    _lastCustomPredictor = algorithm as CustomGMMPredictor;
                     return algorithm.Cluster(_pixels, K);
                 }, _animationCts.Token);
 
@@ -265,24 +263,56 @@ namespace GmmImageSegmentator
 
             _animationCts?.Cancel();
             _animationCts = new CancellationTokenSource();
-            _ = AnimateMessageAsync("Запуск Accord", _animationCts.Token);
+            var token = _animationCts.Token;
+            _ = AnimateMessageAsync("Запуск Accord", token);
             IsClustering = true;
 
             try
             {
-                var accordLabels = await Task.Run(() => new AccordGMMAdapter().Cluster(_pixels, K), _animationCts.Token);
-                var accordImage = ImageLoader.CreateSegmentedImage(accordLabels, _pixels, _imageWidth, _imageHeight, K);
-                _accordResultImage = accordImage;
+                // Создаём адаптер и запоминаем logLikelihood
+                var accordAlgo = new AccordGMMAdapter();
+                var accordLabels = await Task.Run(() => accordAlgo.Cluster(_pixels, K), token);
 
                 _animationCts.Cancel();
                 ProcessingMessage = "";
 
-                var compareWindow = new ComparisonWindow(SegmentedImage as BitmapImage, accordImage);
+                // Вычисляем изображение для Accord
+                var accordImage = ImageLoader.CreateSegmentedImage(accordLabels, _pixels, _imageWidth, _imageHeight, K);
+                _accordResultImage = accordImage;
+
+                // Метрики для моего алгоритма (текущие _labels)
+                string customMetrics = "Недоступно";
+                if (_labels != null && _labels.Length > 0)
+                {
+                    // Получаем logLikelihood из последнего запуска CustomGMMPredictor.
+                    // Так как мы не сохранили ссылку на объект алгоритма при обычной кластеризации,
+                    // можно либо сохранить её в поле _lastCustomAlgo, либо пересчитать заново.
+                    // Для простоты сохраним последний использованный CustomGMMPredictor.
+                    // Добавим поле private CustomGMMPredictor? _lastCustomPredictor.
+                    if (_lastCustomPredictor != null)
+                    {
+                        customMetrics = ClusteringMetrics.FormatMetrics(
+                            _lastCustomPredictor.LastLogLikelihood, _pixels, _labels, K);
+                    }
+                }
+
+                // Метрики для Accord
+                string accordMetrics = ClusteringMetrics.FormatMetrics(
+                    accordAlgo.LastLogLikelihood, _pixels, accordLabels, K);
+
+                // Открываем окно сравнения
+                var compareWindow = new ComparisonWindow(
+                    SegmentedImage as BitmapImage,
+                    accordImage,
+                    customMetrics,
+                    accordMetrics);
                 compareWindow.Owner = Application.Current.MainWindow;
-                if (compareWindow.ShowDialog() == true && compareWindow.SelectedResult == ComparisonResult.Accord)
+
+                if (compareWindow.ShowDialog() == true &&
+                    compareWindow.SelectedResult == ComparisonResult.Accord)
                 {
                     UpdateFromLabels(accordLabels);
-                    SegmentedImage = accordImage;
+                    RefreshSegmentedImage();
                 }
             }
             catch (OperationCanceledException)

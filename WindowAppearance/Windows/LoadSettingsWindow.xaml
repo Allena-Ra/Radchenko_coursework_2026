@@ -5,7 +5,7 @@
         Height="400" Width="500"
         WindowStartupLocation="CenterOwner"
         
-        ResizeMode="NoResize">
+        ResizeMode="NoResize" WindowStyle="ToolWindow">
 	<Grid Margin="10">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>

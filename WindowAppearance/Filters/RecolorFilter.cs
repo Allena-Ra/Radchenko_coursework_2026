@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using GmmImageSegmentator.Filters.Interfaces;
 using GmmImageSegmentator.Utilities;
 
 namespace GmmImageSegmentator.Filters

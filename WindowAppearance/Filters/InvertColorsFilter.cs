@@ -1,35 +1,27 @@
-﻿using System;
+﻿using GmmImageSegmentator.Filters.Interfaces;
 using System.Collections.Generic;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using GmmImageSegmentator.Utilities;
 
 namespace GmmImageSegmentator.Filters
 {
-    public class InvertColorsFilter : IImageFilter
+    /// <summary>
+    /// Фильтр, инвертирующий цвета палитры (R = 255-R, G = 255-G, B = 255-B).
+    /// </summary>
+    public class InvertColorsFilter : IPaletteFilter
     {
-        private readonly int[] _labels;
-        private readonly int _width, _height;
-        private readonly Func<List<Color>> _getPalette;
-        private readonly Action<List<Color>> _setPalette;
-
-        public InvertColorsFilter(int[] labels, int width, int height, Func<List<Color>> getPalette, Action<List<Color>> setPalette)
+        /// <summary>
+        /// Возвращает новую палитру с инвертированными цветами.
+        /// </summary>
+        /// <param name="currentPalette">Исходная палитра.</param>
+        /// <returns>Инвертированная палитра.</returns>
+        public List<Color> Apply(List<Color> currentPalette)
         {
-            _labels = labels;
-            _width = width;
-            _height = height;
-            _getPalette = getPalette;
-            _setPalette = setPalette;
-        }
-
-        public BitmapImage Apply(BitmapImage source)
-        {
-            var palette = _getPalette();
-            var inverted = new List<Color>();
-            foreach (var c in palette)
+            var inverted = new List<Color>(currentPalette.Count);
+            foreach (var c in currentPalette)
+            {
                 inverted.Add(Color.FromRgb((byte)(255 - c.R), (byte)(255 - c.G), (byte)(255 - c.B)));
-            _setPalette(inverted);
-            return ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, inverted);
+            }
+            return inverted;
         }
     }
 }

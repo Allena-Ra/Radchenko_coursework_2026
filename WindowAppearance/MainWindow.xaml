@@ -7,7 +7,8 @@
         WindowStartupLocation="CenterScreen"
         Icon="/1.png" 
         Background="{DynamicResource BackgroundBrush}" 
-        Foreground="{DynamicResource ForegroundBrush}" ResizeMode="CanMinimize" WindowState="Minimized">
+        Foreground="{DynamicResource ForegroundBrush}" 
+        WindowState="Maximized">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibility"/>
@@ -45,7 +46,8 @@
         <!-- Исходное изображение -->
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0">
             <Grid>
-                <TextBlock Text="Исходное изображение" HorizontalAlignment="Center" VerticalAlignment="Top" 
+                <TextBlock Text="Исходное изображение" 
+                           HorizontalAlignment="Center" VerticalAlignment="Top" 
                            Margin="5" Padding="2"/>
                 <Image Source="{Binding OriginalImage}" Stretch="Uniform" Margin="5"/>
             </Grid>
@@ -58,7 +60,8 @@
         <!-- Сегментированное изображение -->
         <Border Grid.Row="1" Grid.Column="2"  BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0">
             <Grid>
-                <TextBlock Text="Сегментированное изображение" HorizontalAlignment="Center" VerticalAlignment="Top" 
+                <TextBlock Text="Сегментированное изображение" 
+                           HorizontalAlignment="Center" VerticalAlignment="Top" 
                            Margin="5" Padding="2"/>
                 
                 <!-- Изображение (видимо, когда не идёт кластеризация) -->

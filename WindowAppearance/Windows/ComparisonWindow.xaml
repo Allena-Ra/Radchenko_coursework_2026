@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <!-- Заголовки -->
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Текущее изображение" 
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Custom GMM" 
                    FontWeight="Bold" HorizontalAlignment="Center" Margin="5"/>
         <TextBlock Grid.Row="0" Grid.Column="2" Text="Accord.NET GMM" 
                    FontWeight="Bold" HorizontalAlignment="Center" Margin="5"/>
@@ -52,13 +52,15 @@
                    HorizontalAlignment="Center"/>
         </Border>
 
-        <!-- Кнопки -->
+        <!-- Кнопки управления (добавлена кнопка Статистика) -->
         <StackPanel Grid.Row="2" Grid.ColumnSpan="3" 
                     Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
             <Button Content="Использовать Custom" Click="UseCustom_Click" 
                     Width="150" Margin="0,0,10,0"/>
             <Button Content="Использовать Accord" Click="UseAccord_Click" 
-                    Width="150"/>
+                    Width="150" Margin="0,0,10,0"/>
+            <Button Content="Статистика" Click="ShowMetrics_Click" 
+                    Width="120"/>
         </StackPanel>
     </Grid>
 </Window>

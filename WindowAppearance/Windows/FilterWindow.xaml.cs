@@ -8,19 +8,33 @@ using Microsoft.Win32;
 using GmmImageSegmentator.Filters;
 using GmmImageSegmentator.Utilities;
 using System.Windows.Shapes;
+using GmmImageSegmentator.Filters.Interfaces;
 
 namespace GmmImageSegmentator
 {
+    /// <summary>
+    /// Окно для применения фильтров к сегментированному изображению.
+    /// Поддерживает работу с палитрой, отмену и повтор действий, а также сохранение результата.
+    /// </summary>
     public partial class FilterWindow : Window
     {
         private readonly int[] _labels;
         private readonly int _width, _height, _k;
-        private readonly List<Color> _clusterMeanColors;
+        private readonly List<Color> _clusterMeanColors; // исходные средние цвета кластеров (не меняются)
         private List<Color> _currentPalette;
         private BitmapImage _currentImage;
-        private Stack<(BitmapImage Image, List<Color> Palette)> _undoStack = new();
-        private Stack<(BitmapImage Image, List<Color> Palette)> _redoStack = new();
 
+        private readonly Stack<(BitmapImage Image, List<Color> Palette)> _undoStack = new();
+        private readonly Stack<(BitmapImage Image, List<Color> Palette)> _redoStack = new();
+
+        /// <summary>
+        /// Создаёт окно фильтров.
+        /// </summary>
+        /// <param name="labels">Метки кластеров пикселей.</param>
+        /// <param name="width">Ширина изображения.</param>
+        /// <param name="height">Высота изображения.</param>
+        /// <param name="k">Количество кластеров.</param>
+        /// <param name="clusterMeanColors">Исходные средние цвета кластеров (для начальной палитры).</param>
         public FilterWindow(int[] labels, int width, int height, int k, List<Color> clusterMeanColors)
         {
             InitializeComponent();
@@ -28,38 +42,70 @@ namespace GmmImageSegmentator
             _width = width;
             _height = height;
             _k = k;
-            _clusterMeanColors = clusterMeanColors;
+            _clusterMeanColors = new List<Color>(clusterMeanColors);
             _currentPalette = new List<Color>(clusterMeanColors);
             _currentImage = ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, _currentPalette);
             FilteredImage.Source = _currentImage;
-            PushUndoState();
+            PushUndoState(); // начальное состояние
             LoadFilters();
             UpdateUndoRedoButtons();
         }
 
+        /// <summary>
+        /// Заполняет список доступных фильтров.
+        /// </summary>
         private void LoadFilters()
         {
-            var invert = new InvertColorsFilter(_labels, _width, _height, () => _currentPalette, p => _currentPalette = p);
-            var random = new RandomColorsFilter(_labels, _width, _height, () => _currentPalette, p => _currentPalette = p);
-            var edge = new EdgeDetectionFilter(_labels, _width, _height);
-
             var filters = new List<FilterItem>
             {
-                new FilterItem { Name = "Перекраска кластеров", Filter = null, IsColorFilter = true, HideApplyButton = true },
-                new FilterItem { Name = "Инверсия цветов", Filter = invert, IsColorFilter = true, HideApplyButton = false },
-                new FilterItem { Name = "Случайные цвета", Filter = random, IsColorFilter = true, HideApplyButton = false },
-                new FilterItem { Name = "Границы кластеров", Filter = edge, IsColorFilter = false, HideApplyButton = false }
+                new FilterItem
+                {
+                    Name = "Перекраска кластеров",
+                    PaletteFilter = null,  // обрабатывается отдельно через панель
+                    IsColorFilter = true,
+                    HideApplyButton = true
+                },
+                new FilterItem
+                {
+                    Name = "Инверсия цветов",
+                    PaletteFilter = new InvertColorsFilter(),
+                    IsColorFilter = true,
+                    HideApplyButton = false
+                },
+                new FilterItem
+                {
+                    Name = "Случайные цвета",
+                    PaletteFilter = new RandomColorsFilter(),
+                    IsColorFilter = true,
+                    HideApplyButton = false
+                },
+                new FilterItem
+                {
+                    Name = "Границы кластеров",
+                    ImageFilter = new EdgeDetectionFilter(_labels, _width, _height),
+                    IsColorFilter = false,
+                    HideApplyButton = false
+                }
             };
             FiltersListBox.ItemsSource = filters;
         }
 
+        /// <summary>
+        /// Создаёт панель с возможностью выбора цвета для каждого кластера.
+        /// </summary>
         private UIElement CreateRecolorSettings()
         {
             var panel = new StackPanel();
             for (int i = 0; i < _k; i++)
             {
                 int cluster = i;
-                var rect = new Rectangle { Width = 20, Height = 20, Fill = new SolidColorBrush(_currentPalette[cluster]), Stroke = Brushes.Black };
+                var rect = new Rectangle
+                {
+                    Width = 20,
+                    Height = 20,
+                    Fill = new SolidColorBrush(_currentPalette[cluster]),
+                    Stroke = Brushes.Black
+                };
                 rect.MouseLeftButtonUp += (s, e) =>
                 {
                     var dialog = new ColorPickerDialog(_currentPalette[cluster]);
@@ -67,12 +113,22 @@ namespace GmmImageSegmentator
                     {
                         PushUndoState();
                         _currentPalette[cluster] = dialog.SelectedColor;
-                        RefreshImageFromPalette();
+                        RefreshAll();
                         UpdateUndoRedoButtons();
                     }
                 };
-                var label = new TextBlock { Text = $"Кластер {cluster}", Margin = new Thickness(5, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-                var colorPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 2) };
+
+                var label = new TextBlock
+                {
+                    Text = $"Кластер {cluster}",
+                    Margin = new Thickness(5, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                var colorPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(0, 2, 0, 2)
+                };
                 colorPanel.Children.Add(rect);
                 colorPanel.Children.Add(label);
                 panel.Children.Add(colorPanel);
@@ -80,12 +136,14 @@ namespace GmmImageSegmentator
             return panel;
         }
 
+        /// <summary>
+        /// При выборе фильтра обновляет панель настроек и видимость кнопки «Применить».
+        /// </summary>
         private void FiltersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             FilterSettingsPanel.Children.Clear();
             if (FiltersListBox.SelectedItem is FilterItem item)
             {
-                // Скрываем кнопку "Применить" для перекраски
                 ApplyButton.Visibility = item.HideApplyButton ? Visibility.Collapsed : Visibility.Visible;
                 if (item.Name == "Перекраска кластеров")
                 {
@@ -94,32 +152,43 @@ namespace GmmImageSegmentator
             }
         }
 
+        /// <summary>
+        /// Обрабатывает нажатие кнопки «Применить».
+        /// Для цветовых фильтров вызывает <see cref="IPaletteFilter.Apply"/> и перестраивает изображение.
+        /// Для фильтров изображений просто вызывает <see cref="IImageFilter.Apply"/>.
+        /// </summary>
         private void ApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            if (FiltersListBox.SelectedItem is FilterItem item && !item.HideApplyButton)
+            if (FiltersListBox.SelectedItem is not FilterItem item || item.HideApplyButton)
+                return;
+
+            PushUndoState(); // сохраняем состояние перед изменением
+
+            if (item.IsColorFilter && item.PaletteFilter != null)
             {
-                if (item.IsColorFilter && item.Filter != null)
-                {
-                    PushUndoState();
-                    item.Filter.Apply(null); // обновляет _currentPalette
-                    RefreshImageFromPalette();
-                    UpdateUndoRedoButtons();
-                }
-                else if (!item.IsColorFilter && item.Filter != null)
-                {
-                    PushUndoState();
-                    var result = item.Filter.Apply(_currentImage);
-                    _currentImage = result;
-                    FilteredImage.Source = _currentImage;
-                    UpdateUndoRedoButtons();
-                }
+                // Цветовой фильтр: получаем новую палитру и перестраиваем изображение
+                _currentPalette = item.PaletteFilter.Apply(new List<Color>(_currentPalette));
+                RefreshAll();
             }
+            else if (!item.IsColorFilter && item.ImageFilter != null)
+            {
+                // Фильтр изображения: получаем новое изображение и обновляем превью
+                _currentImage = item.ImageFilter.Apply(_currentImage);
+                FilteredImage.Source = _currentImage;
+            }
+
+            UpdateUndoRedoButtons();
         }
 
-        private void RefreshImageFromPalette()
+        /// <summary>
+        /// Перестраивает изображение из текущей палитры и обновляет панель перекраски,
+        /// если она сейчас активна. Вызывается после любого изменения палитры.
+        /// </summary>
+        private void RefreshAll()
         {
             _currentImage = ImageLoader.CreateSegmentedImageFromColors(_labels, _width, _height, _currentPalette);
             FilteredImage.Source = _currentImage;
+
             // Обновляем панель перекраски, если она открыта
             if (FiltersListBox.SelectedItem is FilterItem selected && selected.Name == "Перекраска кластеров")
             {
@@ -128,39 +197,29 @@ namespace GmmImageSegmentator
             }
         }
 
+        /// <summary>
+        /// Сохраняет текущее состояние в стек undo.
+        /// </summary>
         private void PushUndoState()
         {
             _undoStack.Push((_currentImage, new List<Color>(_currentPalette)));
-            _redoStack.Clear();
+            _redoStack.Clear(); // любое новое действие сбрасывает redo
         }
 
-        private void Undo()
+        /// <summary>
+        /// Выполняет перемещение состояния между двумя стеками (undo/redo).
+        /// </summary>
+        /// <param name="from">Стек, откуда берём состояние.</param>
+        /// <param name="to">Стек, куда сохраняем текущее состояние.</param>
+        private void MoveHistory(Stack<(BitmapImage, List<Color>)> from,
+                                  Stack<(BitmapImage, List<Color>)> to)
         {
-            if (_undoStack.Count > 1)
+            if (from.Count > (from == _undoStack ? 1 : 0)) // для undo нужно хотя бы два состояния
             {
-                _redoStack.Push((_currentImage, new List<Color>(_currentPalette)));
-                var previous = _undoStack.Pop();
-                _currentImage = previous.Image;
-                _currentPalette = previous.Palette;
-                FilteredImage.Source = _currentImage;
-                // Обновляем панель перекраски, если она открыта
-                if (FiltersListBox.SelectedItem is FilterItem selected && selected.Name == "Перекраска кластеров")
-                {
-                    FilterSettingsPanel.Children.Clear();
-                    FilterSettingsPanel.Children.Add(CreateRecolorSettings());
-                }
-                UpdateUndoRedoButtons();
-            }
-        }
-
-        private void Redo()
-        {
-            if (_redoStack.Count > 0)
-            {
-                _undoStack.Push((_currentImage, new List<Color>(_currentPalette)));
-                var next = _redoStack.Pop();
-                _currentImage = next.Image;
-                _currentPalette = next.Palette;
+                to.Push((_currentImage, new List<Color>(_currentPalette)));
+                var prev = from.Pop();
+                _currentImage = prev.Item1;
+                _currentPalette = prev.Item2;
                 FilteredImage.Source = _currentImage;
                 if (FiltersListBox.SelectedItem is FilterItem selected && selected.Name == "Перекраска кластеров")
                 {
@@ -171,15 +230,24 @@ namespace GmmImageSegmentator
             }
         }
 
+        private void Undo() => MoveHistory(_undoStack, _redoStack);
+        private void Redo() => MoveHistory(_redoStack, _undoStack);
+
+        private void Undo_Click(object sender, RoutedEventArgs e) => Undo();
+        private void Redo_Click(object sender, RoutedEventArgs e) => Redo();
+
+        /// <summary>
+        /// Обновляет доступность кнопок отмены и повтора.
+        /// </summary>
         private void UpdateUndoRedoButtons()
         {
             UndoButton.IsEnabled = _undoStack.Count > 1;
             RedoButton.IsEnabled = _redoStack.Count > 0;
         }
 
-        private void Undo_Click(object sender, RoutedEventArgs e) => Undo();
-        private void Redo_Click(object sender, RoutedEventArgs e) => Redo();
-
+        /// <summary>
+        /// Сохраняет текущее отфильтрованное изображение в файл PNG.
+        /// </summary>
         private void SaveResult_Click(object sender, RoutedEventArgs e)
         {
             if (_currentImage != null)
@@ -189,14 +257,26 @@ namespace GmmImageSegmentator
                     ImageLoader.SaveBitmapSource(_currentImage, dialog.FileName);
             }
         }
-
     }
 
+    /// <summary>
+    /// Описывает один фильтр в списке доступных фильтров окна <see cref="FilterWindow"/>.
+    /// </summary>
     public class FilterItem
     {
+        /// <summary>Отображаемое название фильтра.</summary>
         public string Name { get; set; }
-        public IImageFilter Filter { get; set; }
+
+        /// <summary>Фильтр изображения (если применим).</summary>
+        public IImageFilter? ImageFilter { get; set; }
+
+        /// <summary>Фильтр палитры (если применим).</summary>
+        public IPaletteFilter? PaletteFilter { get; set; }
+
+        /// <summary>Является ли фильтр цветовым (влияет на логику применения).</summary>
         public bool IsColorFilter { get; set; }
-        public bool HideApplyButton { get; set; } = false;
+
+        /// <summary>Скрывать ли кнопку «Применить» (например, для ручной перекраски).</summary>
+        public bool HideApplyButton { get; set; }
     }
 }
